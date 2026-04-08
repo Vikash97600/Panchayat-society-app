@@ -1641,6 +1641,30 @@ a:hover {
   color: var(--brand-primary);
 }
 
+/* ----- Notice Body Expand/Collapse ----- */
+.notice-body {
+  max-height: none;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.notice-body.collapsed {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.toggle-notice {
+  padding: 4px 8px;
+  transition: transform 0.2s ease;
+}
+
+.toggle-notice i {
+  transition: transform 0.2s ease;
+}
+
 /* ----- Service Cards ----- */
 .service-card {
   background: var(--bg-white);

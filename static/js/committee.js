@@ -9,17 +9,24 @@ function log(section, message, data = null) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  console.log('[COMMITTEE] DOMContentLoaded fired');
+  console.log('[COMMITTEE] requireAuth available:', typeof requireAuth);
+  console.log('[COMMITTEE] auth.isAuthenticated:', typeof auth !== 'undefined' ? auth.isAuthenticated() : 'auth not defined');
+  
   if (!requireAuth()) return;
   if (!['admin', 'committee'].includes(localStorage.getItem('panchayat_role'))) {
     window.location.href = '/login/';
     return;
   }
 
+  console.log('[COMMITTEE] Auth check passed');
+
   // Tab navigation
   document.querySelectorAll('.sidebar .nav-link').forEach(link => {
     link.addEventListener('click', (e) => {
       e.preventDefault();
       const tabId = link.dataset.tab;
+      console.log('[COMMITTEE] Nav link clicked, tabId:', tabId);
       switchTab(tabId);
     });
   });
@@ -42,21 +49,36 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function switchTab(tabId) {
-  document.querySelectorAll('.tab-content').forEach(t => {
+  console.log('[COMMITTEE] switchTab called with:', tabId);
+  console.log('[COMMITTEE] Looking for element: tab-' + tabId);
+  console.log('[COMMITTEE] Element found:', !!document.getElementById('tab-' + tabId));
+  
+  // Hide all tab contents
+  const allTabs = document.querySelectorAll('.tab-content');
+  console.log('[COMMITTEE] Found tab-content elements:', allTabs.length);
+  allTabs.forEach(t => {
     t.classList.add('d-none');
     t.classList.remove('active');
   });
-  document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
   
+  // Remove active from all nav links
+  const allNavLinks = document.querySelectorAll('.sidebar .nav-link');
+  console.log('[COMMITTEE] Found nav-link elements:', allNavLinks.length);
+  allNavLinks.forEach(l => l.classList.remove('active'));
+  
+  // Show target tab
   const target = document.getElementById('tab-' + tabId);
   if (target) {
     target.classList.remove('d-none');
     target.classList.add('active');
+    console.log('[COMMITTEE] Target tab classes:', target.className);
   }
   
+  // Activate nav link
   const activeLink = document.querySelector('.sidebar [data-tab="' + tabId + '"]');
   if (activeLink) {
     activeLink.classList.add('active');
+    console.log('[COMMITTEE] Active link found');
   }
 }
 
@@ -92,8 +114,22 @@ async function loadDashboard() {
   const dues = (await duesRes.json()).results || [];
   const notices = (await noticesRes.json()).results || [];
 
-  const today = new Date().toISOString().split('T')[0];
-  const todayResolved = complaints.filter(c => c.status === 'resolved' && c.updated_at && c.updated_at.startsWith(today)).length;
+  // Get today's date in local timezone
+  const now = new Date();
+  const todayStr = now.toISOString().split('T')[0];
+  console.log('[DASHBOARD] Today date string:', todayStr);
+  console.log('[DASHBOARD] Complaints sample:', complaints.slice(0, 3).map(c => ({ id: c.id, status: c.status, updated_at: c.updated_at })));
+
+  // Count resolved today - check both updated_at and resolved_at
+  const todayResolved = complaints.filter(c => {
+    if (c.status !== 'resolved') return false;
+    const updated = c.updated_at || c.resolved_at;
+    if (!updated) return false;
+    // Handle both formats: "2026-04-08T..." and "2026-04-08"
+    return updated.startsWith(todayStr);
+  }).length;
+
+  console.log('[DASHBOARD] Today resolved count:', todayResolved);
 
   document.getElementById('stat-open').textContent = complaints.filter(c => c.status === 'open').length;
   document.getElementById('stat-resolved').textContent = todayResolved;
@@ -389,23 +425,35 @@ async function addComplaintNote(complaintId) {
 // Notices
 async function loadNotices() {
   const tbody = document.getElementById('notices-tbody');
-  tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4"><div class="spinner"></div></td></tr>';
+  tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4"><div class="spinner"></div></td></tr>';
   
   try {
     const res = await api.get('/notices/');
     const data = await res.json();
     const notices = data.results || [];
     
+    console.log('[NOTICES] Loaded:', notices.length);
+    
     if (notices.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4"><div class="empty-state"><i class="fas fa-bullhorn empty-state-icon"></i><h4>No Notices</h4><p>Post your first notice</p></div></td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4"><div class="empty-state"><i class="fas fa-bullhorn empty-state-icon"></i><h4>No Notices</h4><p>Post your first notice</p></div></td></tr>';
       return;
     }
 
     tbody.innerHTML = notices.map(n => `
       <tr class="${n.is_pinned ? 'pinned-notice' : ''}">
+        <td>
+          <button class="btn btn-sm btn-outline-primary toggle-notice" onclick="toggleNoticeBody(${n.id})">
+            <i class="fas fa-chevron-right" id="toggle-icon-${n.id}"></i>
+          </button>
+        </td>
         <td>${n.title}</td>
-        <td>${(n.body || '').substring(0, 50)}...</td>
-        <td>${n.is_pinned ? '<i class="fas fa-thumbtack text-warning"></i>' : '-'}</td>
+        <td>
+          <div id="notice-body-${n.id}" class="notice-body collapsed">
+            ${n.body}
+          </div>
+        </td>
+        <td>${n.is_pinned ? '<span class="badge bg-warning"><i class="fas fa-thumbtack me-1"></i>Pinned</span>' : '-'}</td>
+        <td>${n.expires_at ? '<span class="badge ' + (new Date(n.expires_at) < new Date() ? 'bg-danger' : 'bg-info') + '">' + formatDate(n.expires_at) + '</span>' : '<span class="text-muted">No expiry</span>'}</td>
         <td>${formatDate(n.created_at)}</td>
         <td>
           <button class="btn btn-sm btn-danger" onclick="deleteNotice(${n.id})">
@@ -415,38 +463,82 @@ async function loadNotices() {
       </tr>
     `).join('');
   } catch (e) {
-    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger py-4">Failed to load notices</td></tr>';
+    console.error('[NOTICES] Error:', e);
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger py-4">Failed to load notices</td></tr>';
+  }
+}
+
+// Toggle notice body expand/collapse
+function toggleNoticeBody(noticeId) {
+  const bodyEl = document.getElementById(`notice-body-${noticeId}`);
+  const iconEl = document.getElementById(`toggle-icon-${noticeId}`);
+  
+  if (bodyEl && iconEl) {
+    bodyEl.classList.toggle('collapsed');
+    iconEl.classList.toggle('fa-rotate-90');
   }
 }
 
 async function postNotice() {
+  console.log('[NOTICE] postNotice called');
+  const title = document.getElementById('notice-title').value.trim();
+  const body = document.getElementById('notice-body').value.trim();
+  const isPinned = document.getElementById('notice-pinned').checked;
+  const expiresAtInput = document.getElementById('notice-expires').value;
+  
+  console.log('[NOTICE] Form values - title:', title, 'body:', body, 'isPinned:', isPinned, 'expiresAt:', expiresAtInput);
+  
+  if (!title) {
+    showToast('Please enter a title', 'error');
+    return;
+  }
+  if (!body) {
+    showToast('Please enter the notice body', 'error');
+    return;
+  }
+  
   const data = {
-    title: document.getElementById('notice-title').value,
-    body: document.getElementById('notice-body').value,
-    is_pinned: document.getElementById('notice-pinned').checked
+    title: title,
+    body: body,
+    is_pinned: isPinned
   };
+  
+  // Convert datetime-local to ISO format for Django
+  if (expiresAtInput) {
+    const date = new Date(expiresAtInput);
+    data.expires_at = date.toISOString();
+  }
 
+  console.log('[NOTICE] Posting notice:', data);
+  
   const btn = document.querySelector('#noticeModal .btn-primary');
-  setButtonLoading(btn, true);
+  console.log('[NOTICE] Post button found:', !!btn);
+  if (btn) setButtonLoading(btn, true);
 
   try {
-    const res = await api.post('/notices/', data);
+    console.log('[NOTICE] Making API call to /notices/create/');
+    const res = await api.post('/notices/create/', data);
+    console.log('[NOTICE] API response status:', res.status);
     const result = await res.json();
+    console.log('[NOTICE] Response:', result);
+    
     if (result.success) {
-      showToast('Notice posted', 'success');
+      showToast('Notice posted successfully', 'success');
       bootstrap.Modal.getInstance(document.getElementById('noticeModal')).hide();
       document.getElementById('notice-title').value = '';
       document.getElementById('notice-body').value = '';
       document.getElementById('notice-pinned').checked = false;
+      document.getElementById('notice-expires').value = '';
       loadNotices();
     } else {
       showToast(result.message || 'Failed to post notice', 'error');
     }
   } catch (e) {
+    console.error('[NOTICE] Error:', e);
     showToast('Error posting notice', 'error');
   }
   
-  setButtonLoading(btn, false);
+  if (btn) setButtonLoading(btn, false);
 }
 
 async function deleteNotice(id) {
@@ -787,3 +879,14 @@ document.addEventListener('DOMContentLoaded', () => {
     loadProfile();
   }
 });
+
+// Toggle notice body expand/collapse
+window.toggleNoticeBody = function(noticeId) {
+  const bodyEl = document.getElementById(`notice-body-${noticeId}`);
+  const iconEl = document.getElementById(`toggle-icon-${noticeId}`);
+  
+  if (bodyEl && iconEl) {
+    bodyEl.classList.toggle('collapsed');
+    iconEl.classList.toggle('fa-rotate-90');
+  }
+};

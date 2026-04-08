@@ -22,7 +22,7 @@ class ComplaintListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Complaint
         fields = ['id', 'title', 'description', 'category', 'priority', 'status', 'submitted_by', 
-                  'submitted_by_name', 'assigned_to', 'assigned_to_name', 'created_at',
+                  'submitted_by_name', 'assigned_to', 'assigned_to_name', 'created_at', 'updated_at',
                   'flat_no', 'wing', 'can_edit', 'can_delete']
 
     def get_assigned_to_name(self, obj):
