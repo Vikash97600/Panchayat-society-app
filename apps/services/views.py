@@ -8,7 +8,7 @@ from apps.accounts.views import log_audit
 from .models import Service, ServiceSlot, Booking
 from .serializers import (
     ServiceSerializer, ServiceCreateSerializer, ServiceWithSlotsSerializer, ServiceSlotSerializer,
-    BookingSerializer, BookingCreateSerializer, BookingListSerializer
+    BookingSerializer, BookingCreateSerializer, BookingUpdateSerializer, BookingListSerializer
 )
 
 
@@ -148,11 +148,26 @@ class BookingListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        if user.role in ['admin', 'committee']:
-            return Booking.objects.filter(
-                slot__service__society=user.society
-            ).select_related('resident', 'slot__service')
-        return Booking.objects.filter(resident=user).select_related('slot__service')
+        queryset = Booking.objects.filter(
+            slot__service__society=user.society
+        ).select_related('resident', 'slot__service')
+
+        # Filter by service
+        service_id = self.request.query_params.get('service')
+        if service_id:
+            queryset = queryset.filter(slot__service_id=service_id)
+
+        # Filter by date
+        booking_date = self.request.query_params.get('date')
+        if booking_date:
+            queryset = queryset.filter(slot__slot_date=booking_date)
+
+        # Filter by status
+        status = self.request.query_params.get('status')
+        if status:
+            queryset = queryset.filter(status=status)
+
+        return queryset.order_by('-created_at')
 
     @transaction.atomic
     def perform_create(self, serializer):
@@ -173,8 +188,12 @@ class BookingListCreateView(generics.ListCreateAPIView):
 
 
 class BookingDetailView(generics.RetrieveUpdateAPIView):
-    serializer_class = BookingSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_serializer_class(self):
+        if self.request.method in ['PUT', 'PATCH']:
+            return BookingUpdateSerializer
+        return BookingSerializer
 
     def get_queryset(self):
         user = self.request.user

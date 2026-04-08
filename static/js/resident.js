@@ -682,19 +682,26 @@ async function loadServices() {
       console.error('Error loading bookings:', e);
     }
     
-    const myBookings = allBookings.filter(b => b.resident === user.id);
+    const myBookings = allBookings.filter(b => String(b.resident) === String(user.id));
     const tbody = document.getElementById('my-bookings-tbody');
     if (tbody) {
       if (myBookings.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">No bookings yet</td></tr>';
       } else {
+        const statusBadgeClass = {
+          'pending': 'warning',
+          'confirmed': 'primary',
+          'informed': 'info',
+          'completed': 'success',
+          'cancelled': 'danger'
+        };
         tbody.innerHTML = myBookings.map(b => `
           <tr>
             <td>${b.service_name || 'Service'}</td>
-            <td>${formatDate(b.slot_date)}</td>
+            <td>${b.slot_date || '-'}</td>
             <td>${b.start_time || '-'} - ${b.end_time || '-'}</td>
-            <td><span class="badge badge-${b.status === 'confirmed' ? 'success' : 'warning'}">${b.status}</span></td>
-            <td>${b.status === 'confirmed' ? `<button class="btn btn-sm btn-danger" onclick="cancelBooking(${b.id})"><i class="fas fa-times"></i></button>` : '-'}</td>
+            <td><span class="badge bg-${statusBadgeClass[b.status] || 'secondary'}">${b.status}</span></td>
+            <td>${b.status !== 'cancelled' && b.status !== 'completed' ? `<button class="btn btn-sm btn-danger" onclick="cancelBooking(${b.id})"><i class="fas fa-times"></i></button>` : '-'}</td>
           </tr>
         `).join('');
       }

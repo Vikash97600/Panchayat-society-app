@@ -780,6 +780,15 @@
     <div id="tab-bookings" class="tab-content d-none">
       <div class="page-header">
         <h2><i class="fas fa-calendar-check me-2"></i>Bookings</h2>
+        <div class="d-flex gap-2">
+          <select class="form-select" id="booking-service-filter" style="width: 180px;">
+            <option value="">All Services</option>
+          </select>
+          <input type="date" class="form-control" id="booking-date-filter" style="width: 180px;">
+          <button class="btn btn-primary" onclick="loadBookings()">
+            <i class="fas fa-filter me-1"></i>Filter
+          </button>
+        </div>
       </div>
       
       <div class="card">
@@ -792,11 +801,13 @@
                 <th>Time</th>
                 <th>Resident</th>
                 <th>Flat</th>
+                <th>Phone</th>
                 <th>Status</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody id="bookings-tbody">
-              <tr><td colspan="6" class="text-center py-4"><div class="spinner"></div></td></tr>
+              <tr><td colspan="8" class="text-center py-4"><div class="spinner"></div></td></tr>
             </tbody>
           </table>
         </div>

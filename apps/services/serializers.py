@@ -44,13 +44,16 @@ class ServiceWithSlotsSerializer(ServiceSerializer):
 
 class BookingSerializer(serializers.ModelSerializer):
     resident_name = serializers.CharField(source='resident.full_name', read_only=True)
+    resident_phone = serializers.CharField(source='resident.phone', read_only=True)
+    resident_flat = serializers.CharField(source='resident.flat_no', read_only=True)
+    resident_wing = serializers.CharField(source='resident.wing', read_only=True)
     service_name = serializers.CharField(source='slot.service.name', read_only=True)
     slot_detail = ServiceSlotSerializer(source='slot', read_only=True)
 
     class Meta:
         model = Booking
-        fields = ['id', 'resident', 'resident_name', 'slot', 'slot_detail', 
-                  'service_name', 'status', 'notes', 'created_at']
+        fields = ['id', 'resident', 'resident_name', 'resident_phone', 'resident_flat', 'resident_wing',
+                  'slot', 'slot_detail', 'service_name', 'status', 'notes', 'created_at']
         read_only_fields = ['created_at']
 
 
@@ -60,13 +63,26 @@ class BookingCreateSerializer(serializers.ModelSerializer):
         fields = ['slot', 'notes']
 
 
+class BookingUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Booking
+        fields = ['status', 'notes']
+
+
 class BookingListSerializer(serializers.ModelSerializer):
+    resident_name = serializers.CharField(source='resident.full_name', read_only=True)
+    resident_phone = serializers.CharField(source='resident.phone', read_only=True)
+    resident_flat = serializers.CharField(source='resident.flat_no', read_only=True)
+    resident_wing = serializers.CharField(source='resident.wing', read_only=True)
+    resident = serializers.IntegerField(source='resident.id', read_only=True)
     service_name = serializers.CharField(source='slot.service.name', read_only=True)
     slot_date = serializers.DateField(source='slot.slot_date', read_only=True)
     start_time = serializers.TimeField(source='slot.start_time', read_only=True)
     end_time = serializers.TimeField(source='slot.end_time', read_only=True)
+    service_id = serializers.IntegerField(source='slot.service.id', read_only=True)
 
     class Meta:
         model = Booking
-        fields = ['id', 'service_name', 'slot_date', 'start_time', 'end_time', 
-                  'status', 'notes', 'created_at']
+        fields = ['id', 'service_id', 'service_name', 'slot_date', 'start_time', 'end_time', 
+                  'status', 'notes', 'created_at', 'resident', 'resident_name', 'resident_phone', 
+                  'resident_flat', 'resident_wing']

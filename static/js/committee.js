@@ -783,31 +783,89 @@ async function markPaid(dueId) {
 // Bookings
 async function loadBookings() {
   const tbody = document.getElementById('bookings-tbody');
-  tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4"><div class="spinner"></div></td></tr>';
+  tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4"><div class="spinner"></div></td></tr>';
+  
+  // Build query params
+  const serviceFilter = document.getElementById('booking-service-filter')?.value;
+  const dateFilter = document.getElementById('booking-date-filter')?.value;
+  
+  let url = '/services/bookings/';
+  const params = [];
+  if (serviceFilter) params.push(`service=${serviceFilter}`);
+  if (dateFilter) params.push(`date=${dateFilter}`);
+  if (params.length) url += '?' + params.join('&');
+  
+  // Load services for filter dropdown if not loaded
+  const serviceSelect = document.getElementById('booking-service-filter');
+  if (serviceSelect && serviceSelect.options.length <= 1) {
+    try {
+      const servicesRes = await api.get('/services/');
+      const servicesData = await servicesRes.json();
+      const services = servicesData.results || [];
+      services.forEach(s => {
+        const option = document.createElement('option');
+        option.value = s.id;
+        option.textContent = s.name;
+        serviceSelect.appendChild(option);
+      });
+    } catch (e) {
+      console.error('Failed to load services:', e);
+    }
+  }
   
   try {
-    const res = await api.get('/services/bookings/');
+    const res = await api.get(url);
     const data = await res.json();
+    console.log('[BOOKINGS] Load response:', data);
     const bookings = data.results || [];
     
     if (bookings.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4"><div class="empty-state"><i class="fas fa-calendar empty-state-icon"></i><h4>No Bookings</h4><p>No service bookings yet</p></div></td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">No bookings found</td></tr>';
       return;
     }
+
+    const statusBadgeClass = {
+      'pending': 'warning',
+      'confirmed': 'primary',
+      'informed': 'info',
+      'completed': 'success',
+      'cancelled': 'danger'
+    };
 
     tbody.innerHTML = bookings.map(b => `
       <tr>
         <td>${b.service_name}</td>
-        <td>${formatDate(b.slot_date)}</td>
+        <td>${b.slot_date}</td>
         <td>${b.start_time} - ${b.end_time}</td>
-        <td>${b.resident_name}</td>
-        <td>${b.resident?.flat_no || '-'}</td>
-        <td><span class="badge badge-${b.status === 'confirmed' ? 'success' : 'warning'}">${b.status}</span></td>
+        <td>${b.resident_name || '-'}</td>
+        <td>${b.resident_wing ? b.resident_wing + '-' : ''}${b.resident_flat || '-'}</td>
+        <td>${b.resident_phone ? `<a href="tel:${b.resident_phone}" class="btn btn-sm btn-outline-primary"><i class="fas fa-phone"></i> ${b.resident_phone}</a>` : '-'}</td>
+        <td><span class="badge bg-${statusBadgeClass[b.status] || 'secondary'}">${b.status}</span></td>
+        <td>
+          ${b.status === 'confirmed' ? `<button class="btn btn-sm btn-info" onclick="updateBookingStatus(${b.id}, 'informed')"><i class="fas fa-bell"></i> Inform</button>` : ''}
+          ${b.status === 'informed' ? `<button class="btn btn-sm btn-success" onclick="updateBookingStatus(${b.id}, 'completed')"><i class="fas fa-check"></i> Complete</button>` : ''}
+        </td>
       </tr>
     `).join('');
   } catch (e) {
     console.error('Bookings load error:', e);
-    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger py-4">Failed to load bookings</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger py-4">Failed to load bookings</td></tr>';
+  }
+}
+
+async function updateBookingStatus(bookingId, newStatus) {
+  try {
+    const res = await api.patch(`/services/bookings/${bookingId}/`, { status: newStatus });
+    const result = await res.json();
+    if (result.success) {
+      showToast('Booking status updated', 'success');
+      loadBookings();
+    } else {
+      showToast(result.message || 'Failed to update status', 'error');
+    }
+  } catch (e) {
+    console.error('Status update error:', e);
+    showToast('Error updating status', 'error');
   }
 }
 
@@ -825,6 +883,7 @@ window.loadMaintenance = loadMaintenance;
 window.loadDues = loadDues;
 window.markPaid = markPaid;
 window.loadBookings = loadBookings;
+window.updateBookingStatus = updateBookingStatus;
 window.loadComplaintDetails = loadComplaintDetails;
 window.updateComplaint = updateComplaint;
 window.addComplaintNote = addComplaintNote;
