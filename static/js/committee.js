@@ -456,6 +456,9 @@ async function loadNotices() {
         <td>${n.expires_at ? '<span class="badge ' + (new Date(n.expires_at) < new Date() ? 'bg-danger' : 'bg-info') + '">' + formatDate(n.expires_at) + '</span>' : '<span class="text-muted">No expiry</span>'}</td>
         <td>${formatDate(n.created_at)}</td>
         <td>
+          <button class="btn btn-sm btn-primary me-1" onclick="openEditNoticeModal(${n.id}, '${n.title.replace(/'/g, "\\'")}', '${n.body.replace(/'/g, "\\'").replace(/\n/g, "\\n")}', ${n.is_pinned}, '${n.expires_at || ''}')">
+            <i class="fas fa-edit"></i>
+          </button>
           <button class="btn btn-sm btn-danger" onclick="deleteNotice(${n.id})">
             <i class="fas fa-trash"></i>
           </button>
@@ -555,36 +558,175 @@ async function deleteNotice(id) {
   }
 }
 
+function openEditNoticeModal(id, title, body, isPinned, expiresAt) {
+  document.getElementById('edit-notice-id').value = id;
+  document.getElementById('edit-notice-title').value = title;
+  document.getElementById('edit-notice-body').value = body;
+  document.getElementById('edit-notice-pinned').checked = isPinned;
+  document.getElementById('edit-notice-expires').value = expiresAt ? expiresAt.slice(0, 16) : '';
+  
+  const modal = new bootstrap.Modal(document.getElementById('editNoticeModal'));
+  modal.show();
+}
+
+async function updateNotice() {
+  const id = document.getElementById('edit-notice-id').value;
+  const title = document.getElementById('edit-notice-title').value.trim();
+  const body = document.getElementById('edit-notice-body').value.trim();
+  const isPinned = document.getElementById('edit-notice-pinned').checked;
+  const expiresAtInput = document.getElementById('edit-notice-expires').value;
+  
+  if (!title) {
+    showToast('Please enter a title', 'error');
+    return;
+  }
+  if (!body) {
+    showToast('Please enter the notice body', 'error');
+    return;
+  }
+  
+  const data = {
+    title: title,
+    body: body,
+    is_pinned: isPinned
+  };
+  
+  if (expiresAtInput) {
+    const date = new Date(expiresAtInput);
+    data.expires_at = date.toISOString();
+  }
+  
+  console.log('[NOTICE] Updating notice:', id, data);
+  
+  const btn = document.querySelector('#editNoticeModal .btn-primary');
+  if (btn) setButtonLoading(btn, true);
+
+  try {
+    const res = await api.put('/notices/' + id + '/update/', data);
+    const result = await res.json();
+    console.log('[NOTICE] Update response:', result);
+    
+    if (result.id || res.ok) {
+      showToast('Notice updated successfully', 'success');
+      bootstrap.Modal.getInstance(document.getElementById('editNoticeModal')).hide();
+      loadNotices();
+    } else {
+      showToast(result.message || 'Failed to update notice', 'error');
+    }
+  } catch (e) {
+    console.error('[NOTICE] Update error:', e);
+    showToast('Error updating notice', 'error');
+  }
+  
+  if (btn) setButtonLoading(btn, false);
+}
+
 // Maintenance
 async function loadMaintenance() {
   const month = document.getElementById('maintenance-month')?.value;
   const tbody = document.getElementById('maintenance-tbody');
-  tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4"><div class="spinner"></div></td></tr>';
+  
+  if (!month) {
+    tbody.innerHTML = '<tr><td colspan="2" class="text-center text-muted py-4">Please select a month first</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = '<tr><td colspan="2" class="text-center py-4"><div class="spinner"></div></td></tr>';
+  
+  // Clear inputs first
+  const inputIds = ['maintenance-staff-salaries', 'maintenance-lift-amc', 'maintenance-generator-fuel', 'maintenance-water-charges', 'maintenance-sinking-fund', 'maintenance-garden'];
+  inputIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
   
   try {
-    const res = await api.get('/finance/maintenance/' + (month || '') + '/');
+    const res = await api.get('/finance/maintenance/' + month + '/');
     const data = await res.json();
+    console.log('[MAINTENANCE] Load response:', data);
 
-    if (data.success && data.data.breakdown.length > 0) {
+    if (data.success && data.data && data.data.breakdown && data.data.breakdown.length > 0) {
+      const breakdownMap = {};
+      data.data.breakdown.forEach(b => {
+        breakdownMap[b.category] = b.amount;
+      });
+      
+      const categoryToInput = {
+        'Staff Salaries': 'maintenance-staff-salaries',
+        'Lift AMC': 'maintenance-lift-amc',
+        'Generator Fuel': 'maintenance-generator-fuel',
+        'Water Charges': 'maintenance-water-charges',
+        'Sinking Fund': 'maintenance-sinking-fund',
+        'Garden': 'maintenance-garden'
+      };
+      
+      Object.keys(categoryToInput).forEach(cat => {
+        const inputId = categoryToInput[cat];
+        const el = document.getElementById(inputId);
+        if (el && breakdownMap[cat] !== undefined) {
+          el.value = breakdownMap[cat];
+        }
+      });
+      
       tbody.innerHTML = data.data.breakdown.map(b => `
-        <tr><td>${b.category}</td><td>₹${b.amount.toLocaleString()}</td><td>-</td></tr>
-      `).join('') + `<tr><td><strong>Total</strong></td><td><strong>₹${data.data.total.toLocaleString()}</strong></td><td></td></tr>`;
+        <tr><td>${b.category}</td><td>₹${b.amount.toLocaleString()}</td></tr>
+      `).join('') + `<tr><td><strong>Total</strong></td><td><strong>₹${data.data.total.toLocaleString()}</strong></td></tr>`;
 
       const aiCard = document.getElementById('maintenance-ai');
-      if (aiCard) {
+      if (aiCard && data.data.ai_summary) {
         aiCard.style.display = 'block';
         document.getElementById('maintenance-ai-text').textContent = data.data.ai_summary;
       }
     } else {
-      tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-4">No maintenance data for this month</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="2" class="text-center text-muted py-4">No maintenance data for this month</td></tr>';
     }
   } catch (e) {
     console.error('Maintenance load error:', e);
-    tbody.innerHTML = '<tr><td colspan="3" class="text-center text-danger py-4">Failed to load maintenance data</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="2" class="text-center text-danger py-4">Failed to load maintenance data</td></tr>';
   }
 }
 
 document.getElementById('maintenance-month')?.addEventListener('change', loadMaintenance);
+
+document.getElementById('maintenance-form')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const month = document.getElementById('maintenance-month')?.value;
+  if (!month) {
+    showToast('Please select a month first', 'error');
+    return;
+  }
+  
+  const data = {
+    month: month,
+    staff_salaries: parseFloat(document.getElementById('maintenance-staff-salaries')?.value) || 0,
+    lift_amc: parseFloat(document.getElementById('maintenance-lift-amc')?.value) || 0,
+    generator_fuel: parseFloat(document.getElementById('maintenance-generator-fuel')?.value) || 0,
+    water_charges: parseFloat(document.getElementById('maintenance-water-charges')?.value) || 0,
+    sinking_fund: parseFloat(document.getElementById('maintenance-sinking-fund')?.value) || 0,
+    garden: parseFloat(document.getElementById('maintenance-garden')?.value) || 0
+  };
+  
+  const btn = document.getElementById('save-maintenance-btn');
+  if (btn) setButtonLoading(btn, true);
+  
+  try {
+    const res = await api.post('/finance/maintenance/save/', data);
+    const result = await res.json();
+    
+    if (result.success) {
+      showToast(result.message || 'Maintenance saved successfully', 'success');
+      loadMaintenance();
+    } else {
+      showToast(result.message || 'Failed to save maintenance', 'error');
+    }
+  } catch (e) {
+    console.error('Maintenance save error:', e);
+    showToast('Error saving maintenance: ' + e.message, 'error');
+  }
+  
+  if (btn) setButtonLoading(btn, false);
+});
 
 // Dues
 async function loadDues() {
@@ -677,6 +819,8 @@ window.loadComplaints = loadComplaints;
 window.loadNotices = loadNotices;
 window.postNotice = postNotice;
 window.deleteNotice = deleteNotice;
+window.openEditNoticeModal = openEditNoticeModal;
+window.updateNotice = updateNotice;
 window.loadMaintenance = loadMaintenance;
 window.loadDues = loadDues;
 window.markPaid = markPaid;

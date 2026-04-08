@@ -1,11 +1,12 @@
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
+from rest_framework.decorators import api_view, permission_classes
 from django.db import models
 from django.utils import timezone
 
 from apps.accounts.views import log_audit
 from .models import Notice
-from .serializers import NoticeSerializer, NoticeCreateSerializer
+from .serializers import NoticeSerializer, NoticeCreateSerializer, NoticeUpdateSerializer
 
 
 class IsAdminOrCommittee(permissions.BasePermission):
@@ -55,3 +56,17 @@ class NoticeDeleteView(generics.DestroyAPIView):
         log_audit(request.user, 'notice_deleted', 'Notice', instance.id,
                   {'title': instance.title}, request)
         return super().destroy(request, *args, **kwargs)
+
+
+class NoticeUpdateView(generics.UpdateAPIView):
+    queryset = Notice.objects.all()
+    serializer_class = NoticeUpdateSerializer
+    permission_classes = [IsAdminOrCommittee]
+
+    def get_queryset(self):
+        return Notice.objects.filter(society=self.request.user.society)
+
+    def perform_update(self, serializer):
+        notice = serializer.save()
+        log_audit(self.request.user, 'notice_updated', 'Notice', notice.id,
+                  {'title': notice.title}, self.request)

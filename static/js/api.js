@@ -5,10 +5,18 @@ const API_BASE = '/api';
 
 const token = () => localStorage.getItem('panchayat_token');
 
+const getCsrfToken = () => {
+  return document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+};
+
 const headers = (includeJson = true) => {
   const h = {
     'Authorization': `Bearer ${token()}`
   };
+  const csrfToken = getCsrfToken();
+  if (csrfToken) {
+    h['X-CSRFToken'] = csrfToken;
+  }
   if (includeJson) {
     h['Content-Type'] = 'application/json';
     h['Accept'] = 'application/json';

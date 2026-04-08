@@ -667,17 +667,72 @@
       </div>
       
       <div class="card mb-3">
+        <div class="card-body">
+          <form id="maintenance-form">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Staff Salaries (₹)</label>
+                <div class="input-group">
+                  <span class="input-group-text">₹</span>
+                  <input type="number" class="form-control" id="maintenance-staff-salaries" name="staff_salaries" min="0" step="0.01" placeholder="0.00">
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Lift AMC (₹)</label>
+                <div class="input-group">
+                  <span class="input-group-text">₹</span>
+                  <input type="number" class="form-control" id="maintenance-lift-amc" name="lift_amc" min="0" step="0.01" placeholder="0.00">
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Generator Fuel (₹)</label>
+                <div class="input-group">
+                  <span class="input-group-text">₹</span>
+                  <input type="number" class="form-control" id="maintenance-generator-fuel" name="generator_fuel" min="0" step="0.01" placeholder="0.00">
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Water Charges (₹)</label>
+                <div class="input-group">
+                  <span class="input-group-text">₹</span>
+                  <input type="number" class="form-control" id="maintenance-water-charges" name="water_charges" min="0" step="0.01" placeholder="0.00">
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Sinking Fund (₹)</label>
+                <div class="input-group">
+                  <span class="input-group-text">₹</span>
+                  <input type="number" class="form-control" id="maintenance-sinking-fund" name="sinking_fund" min="0" step="0.01" placeholder="0.00">
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Garden (₹)</label>
+                <div class="input-group">
+                  <span class="input-group-text">₹</span>
+                  <input type="number" class="form-control" id="maintenance-garden" name="garden" min="0" step="0.01" placeholder="0.00">
+                </div>
+              </div>
+            </div>
+            <div class="mt-4">
+              <button type="submit" class="btn btn-primary" id="save-maintenance-btn">
+                <i class="fas fa-save me-2"></i>Save Maintenance
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+      
+      <div class="card mb-3">
         <div class="card-body p-0">
           <table class="table table-hover mb-0">
             <thead>
               <tr>
                 <th>Category</th>
                 <th>Amount (₹)</th>
-                <th>Notes</th>
               </tr>
             </thead>
             <tbody id="maintenance-tbody">
-              <tr><td colspan="3" class="text-center py-4"><div class="spinner"></div></td></tr>
+              <tr><td colspan="2" class="text-center py-4"><div class="spinner"></div></td></tr>
             </tbody>
           </table>
         </div>
@@ -868,6 +923,48 @@
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
         <button type="button" class="btn btn-primary" onclick="postNotice()">
           <i class="fas fa-paper-plane me-2"></i>Post Notice
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Notice Modal -->
+<div class="modal fade" id="editNoticeModal" tabindex="-1" aria-labelledby="editNoticeModalLabel">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="editNoticeModalLabel">
+          <i class="fas fa-edit me-2"></i>Edit Notice
+        </h5>
+        <button type="button" class="modal-close" data-bs-dismiss="modal">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="edit-notice-id">
+        <div class="form-group mb-3">
+          <label class="form-label">Title *</label>
+          <input type="text" class="form-control" id="edit-notice-title" placeholder="Notice title" required>
+        </div>
+        <div class="form-group mb-3">
+          <label class="form-label">Body *</label>
+          <textarea class="form-control" id="edit-notice-body" rows="4" placeholder="Notice content" required></textarea>
+        </div>
+        <div class="form-group mb-3">
+          <label class="form-label">Expiry Date & Time (optional)</label>
+          <input type="datetime-local" class="form-control" id="edit-notice-expires">
+          <small class="text-muted">Leave empty for no expiration</small>
+        </div>
+        <div class="form-check">
+          <input type="checkbox" class="form-check-input" id="edit-notice-pinned">
+          <label class="form-check-label" for="edit-notice-pinned">Pin this notice</label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" onclick="updateNotice()">
+          <i class="fas fa-save me-2"></i>Save Changes
         </button>
       </div>
     </div>

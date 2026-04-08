@@ -16,3 +16,9 @@ class NoticeCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Notice
         fields = ['title', 'body', 'is_pinned', 'expires_at']
+
+
+class NoticeUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notice
+        fields = ['title', 'body', 'is_pinned', 'expires_at']

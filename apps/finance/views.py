@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.utils import timezone
 from django.core.cache import cache
+from django.db import transaction
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import json
@@ -19,10 +20,29 @@ from .serializers import (
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_MAINTENANCE_CATEGORIES = [
+    'Staff Salaries',
+    'Lift AMC',
+    'Generator Fuel',
+    'Water Charges',
+    'Sinking Fund',
+    'Garden'
+]
+
 
 class IsAdminOrCommittee(permissions.BasePermission):
     def has_permission(self, request, view):
         return request.user.is_authenticated and request.user.role in ['admin', 'committee']
+
+
+def ensure_maintenance_categories(society):
+    """Ensure default maintenance categories exist for a society."""
+    for name in DEFAULT_MAINTENANCE_CATEGORIES:
+        MaintenanceCategory.objects.get_or_create(
+            society=society,
+            name=name,
+            defaults={'description': f'{name} expenses'}
+        )
 
 
 class MaintenanceCategoryListView(generics.ListAPIView):
@@ -170,3 +190,109 @@ class CategoryCreateView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(society=self.request.user.society)
+
+
+class MaintenanceBulkSaveView(APIView):
+    permission_classes = [IsAdminOrCommittee]
+
+    def post(self, request):
+        from apps.accounts.models import CustomUser
+        
+        month_str = request.data.get('month')
+        if not month_str:
+            return Response({'success': False, 'message': 'Month is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            month_date = datetime.strptime(month_str, '%Y-%m').date().replace(day=1)
+        except ValueError:
+            return Response({'success': False, 'message': 'Invalid month format'}, status=status.HTTP_400_BAD_REQUEST)
+
+        category_map = {
+            'staff_salaries': 'Staff Salaries',
+            'lift_amc': 'Lift AMC',
+            'generator_fuel': 'Generator Fuel',
+            'water_charges': 'Water Charges',
+            'sinking_fund': 'Sinking Fund',
+            'garden': 'Garden'
+        }
+
+        # Ensure categories exist
+        for name in category_map.values():
+            MaintenanceCategory.objects.get_or_create(
+                society=request.user.society,
+                name=name,
+                defaults={'description': f'{name} expenses'}
+            )
+
+        # Save maintenance entries
+        saved_entries = []
+        for key, category_name in category_map.items():
+            amount = request.data.get(key, 0)
+            if amount is None or amount == '':
+                amount = 0
+            amount = float(amount)
+            
+            category = MaintenanceCategory.objects.filter(
+                society=request.user.society,
+                name=category_name
+            ).first()
+            
+            if category and amount > 0:
+                ledger, created = MaintenanceLedger.objects.update_or_create(
+                    society=request.user.society,
+                    category=category,
+                    month=month_date,
+                    defaults={'amount': amount}
+                )
+                saved_entries.append({'category': category_name, 'amount': amount})
+
+        total = sum(e['amount'] for e in saved_entries)
+
+        # Generate dues for all residents
+        residents = CustomUser.objects.filter(
+            society=request.user.society,
+            role='resident'
+        )
+        
+        flat_count = residents.count()
+        created_dues = 0
+        if flat_count > 0 and total > 0:
+            per_flat_amount = round(total / flat_count, 2)
+            
+            for resident in residents:
+                Due.objects.update_or_create(
+                    resident=resident,
+                    society=request.user.society,
+                    month=month_date,
+                    defaults={'amount': per_flat_amount, 'is_paid': False}
+                )
+                created_dues += 1
+
+        # Clear cache
+        cache.delete(f"maintenance_summary_{request.user.society.id}_{month_str}")
+
+        return Response({
+            'success': True,
+            'message': f'Maintenance saved. {created_dues} dues generated for {flat_count} flats.',
+            'data': {
+                'month': month_str,
+                'entries': saved_entries,
+                'total': total,
+                'dues_created': created_dues,
+                'flat_count': flat_count,
+                'per_flat_amount': round(total / flat_count, 2) if flat_count > 0 else 0
+            }
+        })
+
+        return Response({
+            'success': True,
+            'message': f'Maintenance saved. {created_dues} dues generated for {flat_count} flats.',
+            'data': {
+                'month': month_str,
+                'entries': saved_entries,
+                'total': total,
+                'dues_created': created_dues,
+                'flat_count': flat_count,
+                'per_flat_amount': round(total / flat_count, 2) if flat_count > 0 else 0
+            }
+        })
