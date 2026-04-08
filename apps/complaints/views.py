@@ -1,6 +1,7 @@
 from rest_framework import generics, permissions, status
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
+from rest_framework.generics import get_object_or_404
 from django.db.models import Q
 from django.utils import timezone
 import logging
@@ -99,13 +100,16 @@ class ComplaintDetailView(generics.RetrieveUpdateDestroyAPIView):
         serializer = self.get_serializer(instance, data=request.data, partial=kwargs.get('partial', False))
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
+        
+        # Refresh the instance to get updated data
+        instance.refresh_from_db()
 
         log_audit(request.user, 'complaint_updated', 'Complaint', instance.id,
                   {'changes': request.data}, request)
 
         return Response({
             'success': True,
-            'data': ComplaintDetailSerializer(instance).data,
+            'data': ComplaintDetailSerializer(instance, context={'request': request}).data,
             'message': 'Complaint updated'
         })
 
@@ -146,19 +150,50 @@ class ComplaintNoteView(generics.CreateAPIView):
     def get_queryset(self):
         return Complaint.objects.filter(society=self.request.user.society)
 
+    def get_object(self):
+        pk = self.kwargs.get('pk')
+        logger.info(f"[NOTES] Getting complaint with pk={pk}")
+        queryset = self.get_queryset()
+        return get_object_or_404(queryset, pk=pk)
+
     def create(self, request, *args, **kwargs):
-        complaint = self.get_object()
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save(complaint=complaint, author=request.user)
+        logger.info(f"[NOTES] Request method: {request.method}")
+        logger.info(f"[NOTES] Request content_type: {request.content_type}")
+        logger.info(f"[NOTES] Request data: {request.data}")
+        
+        try:
+            complaint = self.get_object()
+            logger.info(f"[NOTES] Complaint ID: {complaint.id}")
+            
+            serializer = self.get_serializer(data=request.data)
+            logger.info(f"[NOTES] Serializer data: {serializer.initial_data}")
+            
+            is_valid = serializer.is_valid()
+            logger.info(f"[NOTES] Serializer is_valid: {is_valid}")
+            if not is_valid:
+                logger.error(f"[NOTES] Serializer errors: {serializer.errors}")
+                return Response({
+                    'success': False,
+                    'message': f'Validation error: {serializer.errors}'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Save the note
+            note = serializer.save(complaint=complaint, author=request.user)
+            logger.info(f"[NOTES] Note saved successfully: id={note.id}")
 
-        log_audit(request.user, 'note_added', 'Complaint', complaint.id, request=request)
+            log_audit(request.user, 'note_added', 'Complaint', complaint.id, request=request)
 
-        return Response({
-            'success': True,
-            'data': serializer.data,
-            'message': 'Note added'
-        }, status=status.HTTP_201_CREATED)
+            return Response({
+                'success': True,
+                'data': ComplaintNoteSerializer(note).data,
+                'message': 'Note added'
+            }, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            logger.error(f"[NOTES] Error: {type(e).__name__}: {str(e)}")
+            return Response({
+                'success': False,
+                'message': f'Error: {str(e)}'
+            }, status=status.HTTP_400_BAD_REQUEST)
 
 
 class VoiceTranscribeView(generics.GenericAPIView):

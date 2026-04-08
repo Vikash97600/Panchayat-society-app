@@ -63,6 +63,22 @@ const api = {
     }
   },
   
+  // PATCH request
+  patch: async (url, body) => {
+    try {
+      const response = await fetch(API_BASE + url, {
+        method: 'PATCH',
+        headers: headers(),
+        body: JSON.stringify(body),
+        credentials: 'include'
+      });
+      return response;
+    } catch (error) {
+      console.error('API PATCH Error:', error);
+      throw error;
+    }
+  },
+  
   // DELETE request
   delete: async (url) => {
     try {

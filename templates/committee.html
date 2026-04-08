@@ -608,6 +608,7 @@
             <table class="table table-hover mb-0">
               <thead>
                 <tr>
+                  <th></th>
                   <th>ID</th>
                   <th>Flat</th>
                   <th>Title</th>
@@ -619,7 +620,7 @@
                 </tr>
               </thead>
               <tbody id="complaints-tbody">
-                <tr><td colspan="8" class="text-center py-4"><div class="spinner"></div></td></tr>
+                <tr><td colspan="9" class="text-center py-4"><div class="spinner"></div></td></tr>
               </tbody>
             </table>
           </div>
@@ -900,6 +901,28 @@
         <button type="submit" form="change-password-form" class="btn btn-primary">
           <i class="fas fa-save me-2"></i>Change Password
         </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Complaint Detail Modal -->
+<div class="modal fade" id="complaintDetailModal" tabindex="-1" aria-labelledby="complaintDetailModalLabel">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="complaintDetailModalLabel">
+          <i class="fas fa-ticket-alt me-2"></i>Complaint Details
+        </h5>
+        <button type="button" class="modal-close" data-bs-dismiss="modal">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="modal-body" id="complaint-detail-content">
+        <div class="text-center py-4"><div class="spinner"></div></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
       </div>
     </div>
   </div>
