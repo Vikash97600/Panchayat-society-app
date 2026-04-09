@@ -40,6 +40,7 @@ urlpatterns = [
     path('api/finance/', include('apps.finance.urls')),
     path('api/notices/', include('apps.notices.urls')),
     path('api/ai/', include('apps.ai_engine.urls')),
+    path('api/chat/', include('apps.chat.urls')),
 ]
 
 if settings.DEBUG:

@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     'apps.finance',
     'apps.notices',
     'apps.ai_engine',
+    'apps.chat',
 ]
 
 MIDDLEWARE = [

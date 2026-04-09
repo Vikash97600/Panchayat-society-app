@@ -1074,6 +1074,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (tabId === 'profile') {
       loadProfile();
     }
+    if (tabId === 'chat') {
+      if (typeof initChat === 'function') {
+        initChat();
+      }
+    }
+    // Stop chat polling when leaving chat tab
+    if (tabId !== 'chat' && typeof stopPolling === 'function') {
+      stopPolling();
+    }
   };
 
   const activeTabLink = document.querySelector('.sidebar .nav-link.active');

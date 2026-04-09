@@ -1286,6 +1286,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (tabId === 'profile') {
       loadProfile();
     }
+    if (tabId === 'chat') {
+      if (typeof initChat === 'function') {
+        initChat();
+      }
+    }
+    // Stop chat polling when leaving chat tab
+    if (tabId !== 'chat' && typeof stopPolling === 'function') {
+      stopPolling();
+    }
   };
 
   // If profile tab is already active on initial load, refresh it immediately
