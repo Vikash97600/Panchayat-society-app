@@ -86,6 +86,23 @@ function toggleSidebarThemeMenu() {
   }
 }
 
+// Toggle header theme menu
+function toggleHeaderThemeMenu() {
+  const menu = document.getElementById('headerThemeMenu');
+  if (menu) {
+    menu.classList.toggle('show');
+  }
+}
+
+// Set theme (for header theme menu)
+function setTheme(themeName) {
+  if (themes[themeName]) {
+    applyTheme(themeName);
+    const menu = document.getElementById('headerThemeMenu');
+    if (menu) menu.classList.remove('show');
+  }
+}
+
 // Set theme from sidebar
 function setSidebarTheme(themeName) {
   if (themes[themeName]) {
@@ -152,6 +169,13 @@ document.addEventListener('click', function(e) {
     if (btn) btn.style.transform = '';
   }
   
+  // Header theme menu
+  const headerThemeToggle = document.querySelector('.header-theme-toggle');
+  if (headerThemeToggle && !headerThemeToggle.contains(e.target)) {
+    const headerMenu = document.getElementById('headerThemeMenu');
+    if (headerMenu) headerMenu.classList.remove('show');
+  }
+  
   // Floating theme dropdown
   const floatingSwitcher = document.querySelector('.theme-switcher');
   const dropdown = document.getElementById('themeDropdown');
@@ -167,11 +191,22 @@ if (document.readyState === 'loading') {
   initTheme();
 }
 
+// Mobile sidebar toggle
+function toggleMobileSidebar() {
+  const sidebar = document.querySelector('.sidebar');
+  if (sidebar) {
+    sidebar.classList.toggle('show');
+  }
+}
+
 // Export to window
 window.themes = themes;
 window.getSavedTheme = getSavedTheme;
 window.applyTheme = applyTheme;
 window.toggleSidebarThemeMenu = toggleSidebarThemeMenu;
+window.toggleHeaderThemeMenu = toggleHeaderThemeMenu;
+window.setTheme = setTheme;
 window.setSidebarTheme = setSidebarTheme;
 window.selectFloatingTheme = selectFloatingTheme;
 window.toggleFloatingThemeMenu = toggleFloatingThemeMenu;
+window.toggleMobileSidebar = toggleMobileSidebar;

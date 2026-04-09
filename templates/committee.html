@@ -25,6 +25,90 @@
     background: linear-gradient(135deg, #3b82f6, #1d4ed8);
     color: white;
   }
+  
+  /* Navigation Section Styles */
+  .sidebar-committee .nav-section {
+    margin-bottom: 16px;
+  }
+  
+  .sidebar-committee .nav-section-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: rgba(255, 255, 255, 0.4);
+    padding: 8px 16px;
+    margin-top: 8px;
+    font-weight: 600;
+  }
+  
+  .sidebar-committee .nav-section:first-child .nav-section-title {
+    display: none;
+  }
+
+  /* Header Theme Toggle */
+  .main-header {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 12px 24px;
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border-color);
+    gap: 16px;
+  }
+  
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  
+  .header-theme-toggle {
+    position: relative;
+  }
+  
+  .header-theme-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--card-bg);
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+  }
+  
+  .header-theme-btn:hover {
+    background: var(--brand-light);
+    color: var(--brand-primary);
+  }
+  
+  .header-theme-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 100%;
+    margin-top: 8px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: var(--shadow-lg);
+    min-width: 140px;
+    z-index: 1000;
+    padding: 8px;
+  }
+  
+  .header-theme-menu.show {
+    display: block;
+    animation: fadeIn 0.2s ease;
+  }
+  
+  .header-user-info {
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
 
   /* Enhanced Stats Grid */
   .committee-stats-grid {
@@ -431,81 +515,60 @@
     </div>
     
     <nav class="sidebar-nav">
-      <ul class="nav flex-column">
-        <li class="nav-item">
-          <a class="nav-link active" href="#" data-tab="dashboard">
-            <i class="fas fa-chart-line"></i> Dashboard
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="#" data-tab="complaints">
-            <i class="fas fa-ticket-alt"></i> Complaints
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="#" data-tab="notices">
-            <i class="fas fa-bullhorn"></i> Notices
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="#" data-tab="maintenance">
-            <i class="fas fa-wrench"></i> Maintenance
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="#" data-tab="dues">
-            <i class="fas fa-rupee-sign"></i> Dues
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="#" data-tab="bookings">
-            <i class="fas fa-calendar-check"></i> Bookings
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="#" data-tab="profile">
-            <i class="fas fa-user"></i> Profile
-          </a>
-        </li>
-      </ul>
+      <div class="nav-section">
+        <ul class="nav flex-column">
+          <li class="nav-item">
+            <a class="nav-link active" href="#" data-tab="dashboard">
+              <i class="fas fa-chart-line"></i> Dashboard
+            </a>
+          </li>
+        </ul>
+      </div>
+      
+      <div class="nav-section">
+        <div class="nav-section-title">Management</div>
+        <ul class="nav flex-column">
+          <li class="nav-item">
+            <a class="nav-link" href="#" data-tab="complaints">
+              <i class="fas fa-ticket-alt"></i> Complaints
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" data-tab="notices">
+              <i class="fas fa-bullhorn"></i> Notices
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" data-tab="maintenance">
+              <i class="fas fa-wrench"></i> Maintenance
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" data-tab="dues">
+              <i class="fas fa-rupee-sign"></i> Dues
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" data-tab="bookings">
+              <i class="fas fa-calendar-check"></i> Bookings
+            </a>
+          </li>
+        </ul>
+      </div>
+      
+      <div class="nav-section">
+        <div class="nav-section-title">Account</div>
+        <ul class="nav flex-column">
+          <li class="nav-item">
+            <a class="nav-link" href="#" data-tab="profile">
+              <i class="fas fa-user"></i> Profile
+            </a>
+          </li>
+        </ul>
+      </div>
     </nav>
     
     <div class="sidebar-footer">
-      <!-- Theme Switcher in Sidebar -->
-      <div class="sidebar-theme-switcher">
-        <button class="theme-toggle-btn" onclick="toggleSidebarThemeMenu()">
-          <i class="fas fa-palette"></i>
-          <span>Theme</span>
-          <i class="fas fa-chevron-right"></i>
-        </button>
-        <div class="sidebar-theme-menu" id="sidebarThemeMenu">
-          <button class="theme-option" data-theme="light" onclick="setSidebarTheme('light')">
-            <span class="theme-dot light"></span>
-            <span>Light</span>
-          </button>
-          <button class="theme-option" data-theme="dark" onclick="setSidebarTheme('dark')">
-            <span class="theme-dot dark"></span>
-            <span>Dark</span>
-          </button>
-          <button class="theme-option" data-theme="green" onclick="setSidebarTheme('green')">
-            <span class="theme-dot green"></span>
-            <span>Green</span>
-          </button>
-          <button class="theme-option" data-theme="gov" onclick="setSidebarTheme('gov')">
-            <span class="theme-dot gov"></span>
-            <span>Government</span>
-          </button>
-          <button class="theme-option" data-theme="neon" onclick="setSidebarTheme('neon')">
-            <span class="theme-dot neon"></span>
-            <span>Neon</span>
-          </button>
-          <button class="theme-option" data-theme="earth" onclick="setSidebarTheme('earth')">
-            <span class="theme-dot earth"></span>
-            <span>Earthy</span>
-          </button>
-        </div>
-      </div>
-      
       <a class="nav-link logout-link" href="#" onclick="auth.logout()">
         <i class="fas fa-sign-out-alt"></i> Logout
       </a>
@@ -514,6 +577,45 @@
 
   <!-- Main Content -->
   <main class="main-content">
+    <!-- Header with Theme Toggle -->
+    <div class="main-header">
+      <div class="header-left">
+        <button class="mobile-toggle d-lg-none" onclick="toggleMobileSidebar()">
+          <i class="fas fa-bars"></i>
+        </button>
+      </div>
+      <div class="header-right">
+        <div class="header-theme-toggle">
+          <button class="header-theme-btn" onclick="toggleHeaderThemeMenu()" title="Change Theme">
+            <i class="fas fa-palette"></i>
+          </button>
+          <div class="header-theme-menu" id="headerThemeMenu">
+            <button class="theme-option" data-theme="light" onclick="setTheme('light')">
+              <span class="theme-dot light"></span> Light
+            </button>
+            <button class="theme-option" data-theme="dark" onclick="setTheme('dark')">
+              <span class="theme-dot dark"></span> Dark
+            </button>
+            <button class="theme-option" data-theme="green" onclick="setTheme('green')">
+              <span class="theme-dot green"></span> Green
+            </button>
+            <button class="theme-option" data-theme="gov" onclick="setTheme('gov')">
+              <span class="theme-dot gov"></span> Govt
+            </button>
+            <button class="theme-option" data-theme="neon" onclick="setTheme('neon')">
+              <span class="theme-dot neon"></span> Neon
+            </button>
+            <button class="theme-option" data-theme="earth" onclick="setTheme('earth')">
+              <span class="theme-dot earth"></span> Earthy
+            </button>
+          </div>
+        </div>
+        <div class="header-user-info">
+          <span id="header-user-name">User</span>
+        </div>
+      </div>
+    </div>
+    
     <!-- Dashboard -->
     <div id="tab-dashboard" class="tab-content active">
       <div class="page-header">

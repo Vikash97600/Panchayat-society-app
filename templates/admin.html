@@ -145,13 +145,112 @@
     background: linear-gradient(135deg, #b45309, #92400e);
   }
   
+  /* Header Theme Toggle */
+  .main-header {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 12px 24px;
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border-color);
+    gap: 16px;
+  }
+  
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  
+  .header-theme-toggle {
+    position: relative;
+  }
+  
+  .header-theme-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--card-bg);
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+  }
+  
+  .header-theme-btn:hover {
+    background: var(--brand-light);
+    color: var(--brand-primary);
+  }
+  
+  .header-theme-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 100%;
+    margin-top: 8px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: var(--shadow-lg);
+    min-width: 140px;
+    z-index: 1000;
+    padding: 8px;
+  }
+  
+  .header-theme-menu.show {
+    display: block;
+    animation: fadeIn 0.2s ease;
+  }
+  
+  .header-user-info {
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+  
+  /* Navigation Section Styles */
+  .sidebar-admin .nav-section {
+    margin-bottom: 16px;
+  }
+  
+  .sidebar-admin .nav-section-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: rgba(255, 255, 255, 0.4);
+    padding: 8px 16px;
+    margin-top: 8px;
+    font-weight: 600;
+  }
+  
+  .sidebar-admin .nav-section:first-child .nav-section-title {
+    display: none;
+  }
+  
   .sidebar-admin .logout-link {
-    color: #f87171;
+    color: #f87171 !important;
+    display: flex !important;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-top: 8px;
+    text-decoration: none !important;
+    width: 100%;
+    box-sizing: border-box;
   }
   
   .sidebar-admin .logout-link:hover {
-    background: rgba(248, 113, 113, 0.1);
-    color: #f87171;
+    background: rgba(248, 113, 113, 0.2) !important;
+    color: #f87171 !important;
+  }
+  
+  .sidebar-admin .sidebar-footer {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 16px;
+    margin-top: auto;
   }
 
   /* Stats card animation */
@@ -453,42 +552,7 @@
     </nav>
     
     <div class="sidebar-footer">
-      <!-- Theme Switcher in Sidebar -->
-      <div class="sidebar-theme-switcher">
-        <button class="theme-toggle-btn" onclick="toggleSidebarThemeMenu()">
-          <i class="fas fa-palette"></i>
-          <span>Theme</span>
-          <i class="fas fa-chevron-right"></i>
-        </button>
-        <div class="sidebar-theme-menu" id="sidebarThemeMenu">
-          <button class="theme-option" data-theme="light" onclick="setSidebarTheme('light')">
-            <span class="theme-dot light"></span>
-            <span>Light</span>
-          </button>
-          <button class="theme-option" data-theme="dark" onclick="setSidebarTheme('dark')">
-            <span class="theme-dot dark"></span>
-            <span>Dark</span>
-          </button>
-          <button class="theme-option" data-theme="green" onclick="setSidebarTheme('green')">
-            <span class="theme-dot green"></span>
-            <span>Green</span>
-          </button>
-          <button class="theme-option" data-theme="gov" onclick="setSidebarTheme('gov')">
-            <span class="theme-dot gov"></span>
-            <span>Government</span>
-          </button>
-          <button class="theme-option" data-theme="neon" onclick="setSidebarTheme('neon')">
-            <span class="theme-dot neon"></span>
-            <span>Neon</span>
-          </button>
-          <button class="theme-option" data-theme="earth" onclick="setSidebarTheme('earth')">
-            <span class="theme-dot earth"></span>
-            <span>Earthy</span>
-          </button>
-        </div>
-      </div>
-      
-      <a class="nav-link logout-link" href="#" onclick="auth.logout()">
+      <a href="#" onclick="auth.logout()" style="display: flex; align-items: center; gap: 10px; padding: 12px 16px; color: #f87171; text-decoration: none; border-radius: 8px; margin-top: 8px; width: 100%; box-sizing: border-box;" onmouseover="this.style.background='rgba(248,113,113,0.2)'" onmouseout="this.style.background='transparent'">
         <i class="fas fa-sign-out-alt"></i> Logout
       </a>
     </div>
@@ -496,6 +560,45 @@
 
   <!-- Main Content -->
   <main class="main-content" role="main">
+    <!-- Header with Theme Toggle -->
+    <div class="main-header">
+      <div class="header-left">
+        <button class="mobile-toggle d-lg-none" onclick="toggleMobileSidebar()">
+          <i class="fas fa-bars"></i>
+        </button>
+      </div>
+      <div class="header-right">
+        <div class="header-theme-toggle">
+          <button class="header-theme-btn" onclick="toggleHeaderThemeMenu()" title="Change Theme">
+            <i class="fas fa-palette"></i>
+          </button>
+          <div class="header-theme-menu" id="headerThemeMenu">
+            <button class="theme-option" data-theme="light" onclick="setTheme('light')">
+              <span class="theme-dot light"></span> Light
+            </button>
+            <button class="theme-option" data-theme="dark" onclick="setTheme('dark')">
+              <span class="theme-dot dark"></span> Dark
+            </button>
+            <button class="theme-option" data-theme="green" onclick="setTheme('green')">
+              <span class="theme-dot green"></span> Green
+            </button>
+            <button class="theme-option" data-theme="gov" onclick="setTheme('gov')">
+              <span class="theme-dot gov"></span> Govt
+            </button>
+            <button class="theme-option" data-theme="neon" onclick="setTheme('neon')">
+              <span class="theme-dot neon"></span> Neon
+            </button>
+            <button class="theme-option" data-theme="earth" onclick="setTheme('earth')">
+              <span class="theme-dot earth"></span> Earthy
+            </button>
+          </div>
+        </div>
+        <div class="header-user-info">
+          <span id="header-user-name">Admin</span>
+        </div>
+      </div>
+    </div>
+    
     <!-- Dashboard Tab -->
     <div id="tab-dashboard" class="tab-content active">
       <div class="page-header">
