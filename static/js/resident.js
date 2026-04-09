@@ -43,15 +43,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const userAvatar = document.getElementById('user-avatar');
     
     if (welcomeMsg) {
-      const firstName = user.full_name || user.first_name || 'User';
+      const firstName = user.first_name || user.full_name || user.username || 'User';
       welcomeMsg.textContent = getGreeting() + ', ' + firstName;
       log('USER', 'Welcome message set:', welcomeMsg.textContent);
     }
     if (flatInfo) {
       flatInfo.textContent = 'Flat ' + (user.flat_no || '-') + ', Wing ' + (user.wing || '-');
     }
-    if (userAvatar && user.first_name) {
-      userAvatar.textContent = user.first_name.charAt(0).toUpperCase();
+    if (userAvatar) {
+      const initial = (user.first_name || user.full_name || user.username || 'U').charAt(0).toUpperCase();
+      userAvatar.textContent = initial;
     }
   }
   

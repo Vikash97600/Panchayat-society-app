@@ -167,6 +167,13 @@
     opacity: 0;
     position: relative;
     overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .stats-grid .stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
   }
 
   .stats-grid .stat-card:nth-child(1) { animation-delay: 0.1s; }
@@ -500,7 +507,7 @@
       
       <!-- Stats Grid -->
       <div class="stats-grid">
-        <div class="stat-card primary">
+        <div class="stat-card primary" onclick="switchTab('societies')">
           <div class="stat-icon">
             <i class="fas fa-building"></i>
           </div>
@@ -508,7 +515,7 @@
           <div class="stat-label">Total Societies</div>
         </div>
         
-        <div class="stat-card success">
+        <div class="stat-card success" onclick="switchTab('users')">
           <div class="stat-icon">
             <i class="fas fa-users"></i>
           </div>

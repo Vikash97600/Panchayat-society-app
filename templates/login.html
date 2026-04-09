@@ -241,7 +241,9 @@ document.addEventListener('DOMContentLoaded', function() {
         localStorage.setItem('panchayat_user', JSON.stringify(data.data.user));
         localStorage.setItem('panchayat_role', data.data.user.role);
         
-        showToast('Login successful! Welcome back.', 'success');
+        console.log('Login user data:', data.data.user);
+        
+        showToast('Login successful! Welcome back, ' + (data.data.user.first_name || data.data.user.full_name || 'User') + '!', 'success');
         
         // Fade out and redirect
         document.querySelector('.login-card').classList.add('animate__fadeOut');
