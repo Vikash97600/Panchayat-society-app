@@ -327,7 +327,7 @@ Other tables: `bylaws`, `services`, `service_slots`, `bookings`, `maintenance_ca
 ## 📁 Project Structure
 
 ```
-panchayat_project/
+Panchayat-society-app/
 ├── .env                          ← Secret keys (never commit)
 ├── manage.py
 ├── requirements.txt
