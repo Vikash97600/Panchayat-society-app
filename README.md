@@ -142,7 +142,7 @@ Three roles: **Admin**, **Committee**, **Resident**
 
 ```bash
 git clone <your-repo-url>
-cd panchayat_project
+cd Panchayat-society-app
 ```
 
 ### Step 2 — Create Virtual Environment
