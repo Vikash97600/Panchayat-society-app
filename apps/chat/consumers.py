@@ -60,7 +60,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         # Update online status and send initial data
         await self.update_online_status(True)
-        await self.send_initial_messages()
+        await self.send_chat_history()
         await self.broadcast_online_status()
 
     async def disconnect(self, close_code):
@@ -236,9 +236,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
         except Exception as e:
             logger.error(f'[CHAT] Error saving message: {str(e)}')
 
+    async def chat_history(self, event):
+        """Broadcast chat history to all users in the room."""
+        await self.send(text_data=json.dumps({
+            'type': 'chat_history',
+            'messages': event['messages']
+        }))
+
     @database_sync_to_async
-    def send_initial_messages(self):
-        """Send cached messages when client first connects."""
+    def send_chat_history(self):
+        """Send chat history when client first connects."""
+        logger.info(f'[CHAT] Sending chat history to user {self.user.id} for room {self.room_id}')
         try:
             hidden_message_ids = set(
                 MessageVisibility.objects.filter(
@@ -268,14 +276,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     'can_delete': msg.sender.id == self.user.id and not msg.is_deleted_for_everyone
                 })
 
-            logger.info(f'[CHAT] Sending {len(messages_data)} initial messages to user {self.user.id}')
+            logger.info(f'[CHAT] Sending {len(messages_data)} messages in chat history to user {self.user.id}')
 
             async_to_sync(self.send)(text_data=json.dumps({
-                'type': 'initial_messages',
+                'type': 'chat_history',
                 'messages': messages_data
             }))
         except Exception as e:
-            logger.error(f'[CHAT] Error sending initial messages: {str(e)}')
+            logger.error(f'[CHAT] Error sending chat history: {str(e)}')
 
     @database_sync_to_async
     def broadcast_typing(self, is_typing):
@@ -387,7 +395,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def clear_chat(self):
-        """Clear all messages for current user (hide them)."""
+        """Clear all messages for current user (hide them) and broadcast to room."""
         try:
             room = ChatRoom.objects.get(id=self.room_id)
             message_ids = list(room.messages.values_list('id', flat=True))
@@ -401,10 +409,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
             logger.info(f'[CHAT] Cleared {len(message_ids)} messages for user {self.user.id} in room {self.room_id}')
 
-            async_to_sync(self.send)(text_data=json.dumps({
-                'type': 'chat_cleared',
-                'cleared_by': self.user.id
-            }))
+            # Broadcast to all users in room
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                self.room_group_name,
+                {
+                    'type': 'chat_cleared',
+                    'cleared_by': self.user.id
+                }
+            )
         except Exception as e:
             logger.error(f'[CHAT] Error clearing chat: {str(e)}')
 

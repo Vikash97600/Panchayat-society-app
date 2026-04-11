@@ -8,6 +8,7 @@ class MessageSerializer(serializers.ModelSerializer):
     sender_name = serializers.CharField(source='sender.get_full_name', read_only=True)
     sender_email = serializers.CharField(source='sender.email', read_only=True)
     sender_role = serializers.CharField(source='sender.role', read_only=True)
+    sender_id = serializers.IntegerField(source='sender.id', read_only=True)
     is_me = serializers.SerializerMethodField()
     is_deleted_for_everyone = serializers.BooleanField(read_only=True)
     can_delete = serializers.SerializerMethodField()
@@ -15,12 +16,12 @@ class MessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Message
         fields = [
-            'id', 'content', 'created_at', 'is_read', 'sender',
+            'id', 'content', 'created_at', 'is_read', 'sender_id',
             'sender_name', 'sender_email', 'sender_role', 'is_me',
             'is_deleted_for_everyone', 'can_delete'
         ]
         read_only_fields = [
-            'id', 'created_at', 'is_read', 'sender',
+            'id', 'created_at', 'is_read', 'sender_id',
             'sender_name', 'sender_email', 'sender_role',
             'is_deleted_for_everyone'
         ]

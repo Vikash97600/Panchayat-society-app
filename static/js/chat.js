@@ -154,6 +154,9 @@ function handleWebSocketMessage(data) {
     console.debug('[CHAT] Received WebSocket message:', data.type);
     
     switch (data.type) {
+        case 'chat_history':
+            renderChatHistory(data.messages);
+            break;
         case 'initial_messages':
             handleInitialMessages(data.messages);
             break;
@@ -181,24 +184,38 @@ function handleWebSocketMessage(data) {
 }
 
 /**
- * Handle initial cached messages on connect
+ * Handle initial cached messages on connect (legacy support)
  */
 function handleInitialMessages(messages) {
     console.log('[CHAT] Received initial messages:', messages?.length || 0);
+    renderChatHistory(messages);
+}
+
+/**
+ * Render entire chat history (oldest first)
+ */
+function renderChatHistory(messages) {
+    console.log('[CHAT] Rendering chat history:', messages?.length || 0);
+    console.log('[CHAT] First message in history:', messages?.[0]);
     const container = document.getElementById('chat-messages-list');
     const emptyMsg = document.getElementById('chat-empty');
     
-    if (!container) return;
+    if (!container) {
+        console.error('[CHAT] Chat messages container not found');
+        return;
+    }
     
     if (messages && messages.length > 0) {
         if (emptyMsg) emptyMsg.classList.add('d-none');
         container.innerHTML = messages.map(msg => buildMessageHTML(msg)).join('');
         lastMessageCount = messages.length;
+        console.log('[CHAT] Chat history rendered, message count:', messages.length);
         scrollToBottom();
     } else {
         if (emptyMsg) emptyMsg.classList.remove('d-none');
         container.innerHTML = '';
         lastMessageCount = 0;
+        console.log('[CHAT] No messages in chat history');
     }
 }
 
@@ -207,6 +224,7 @@ function handleInitialMessages(messages) {
  */
 function handleReceivedMessage(msg) {
     console.log('[CHAT] Received message:', msg.id);
+    console.log('[CHAT] Message content:', msg.content);
     const container = document.getElementById('chat-messages-list');
     const emptyMsg = document.getElementById('chat-empty');
     
@@ -638,7 +656,8 @@ window.selectRoom = async function(roomId, userName, userRole) {
     document.getElementById('chat-with-name').textContent = userName || 'Chat';
     document.getElementById('chat-with-role').textContent = userRole ? userRole.charAt(0).toUpperCase() + userRole.slice(1) : '';
     document.getElementById('chat-messages-list').innerHTML = '';
-    document.getElementById('chat-empty').classList.add('d-none');
+    document.getElementById('chat-empty').classList.remove('d-none');
+    document.getElementById('chat-empty').textContent = 'Loading messages...';
     
     // Highlight room
     updateRoomHighlight(roomId);
@@ -646,7 +665,10 @@ window.selectRoom = async function(roomId, userName, userRole) {
     // Clear typing indicators
     typingUsersMap.forEach((_, userId) => removeTypingIndicator(userId));
     
-    // Connect WebSocket and load messages
+    // Load messages immediately via REST API
+    loadMessagesViaAPI(roomId);
+    
+    // Connect WebSocket for real-time updates
     initWebSocket();
     
     // Start polling if WebSocket not connected
@@ -656,7 +678,7 @@ window.selectRoom = async function(roomId, userName, userRole) {
                 console.log('[CHAT] WebSocket not connected, starting polling');
                 startPolling();
             }
-        }, 1000);
+        }, 2000);
     }
     
     // Mark messages as read
@@ -669,6 +691,69 @@ window.selectRoom = async function(roomId, userName, userRole) {
         console.error('[CHAT] Error marking read:', error);
     }
 };
+
+/**
+ * Load messages via REST API (immediate load on room selection)
+ */
+async function loadMessagesViaAPI(roomId) {
+    console.log('[CHAT] Loading messages via API for room:', roomId);
+    try {
+        const res = await fetch(`/api/chat/rooms/${roomId}/messages/`, {
+            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('panchayat_token') }
+        });
+        
+        if (!res.ok) {
+            console.error('[CHAT] Failed to load messages:', res.status);
+            return;
+        }
+        
+        const data = await res.json();
+        const messages = Array.isArray(data) ? data : (data?.results || []);
+        
+        console.log('[CHAT] Raw API response:', data);
+        console.log('[CHAT] Loaded', messages.length, 'messages via API');
+        console.log('[CHAT] First message sample:', messages[0]);
+        
+        const container = document.getElementById('chat-messages-list');
+        const emptyMsg = document.getElementById('chat-empty');
+        
+        if (!container) return;
+        
+        if (messages.length > 0) {
+            if (emptyMsg) emptyMsg.classList.add('d-none');
+            try {
+                const safeMessages = messages.map(msg => ({
+                    id: msg.id,
+                    content: msg.content,
+                    created_at: msg.created_at,
+                    is_read: msg.is_read,
+                    sender_id: msg.sender ? msg.sender.id : msg.sender_id,
+                    sender_name: msg.sender_name,
+                    sender_role: msg.sender_role,
+                    is_me: msg.is_me,
+                    is_deleted_for_everyone: msg.is_deleted_for_everyone,
+                    can_delete: msg.can_delete
+                }));
+                const html = safeMessages.map(msg => buildMessageHTML(msg)).join('');
+                container.innerHTML = html;
+                lastMessageCount = messages.length;
+                scrollToBottom();
+                console.log('[CHAT] Messages rendered via API');
+            } catch (e) {
+                console.error('[CHAT] Error rendering messages:', e);
+            }
+        } else {
+            if (emptyMsg) emptyMsg.classList.remove('d-none');
+            emptyMsg.textContent = 'No messages yet. Start the conversation!';
+            container.innerHTML = '';
+            lastMessageCount = 0;
+        }
+    } catch (error) {
+        console.error('[CHAT] Error loading messages via API:', error);
+        const emptyMsg = document.getElementById('chat-empty');
+        if (emptyMsg) emptyMsg.textContent = 'Failed to load messages';
+    }
+}
 
 // ==================== MESSAGE SENDINGANDACTIONS ====================
 
@@ -1063,13 +1148,16 @@ function buildMessageHTML(msg) {
         return '';
     }
     
+    console.log('[CHAT] Building HTML for message:', msg.id, 'content:', msg.content);
+    
     const isMe = msg.is_me === true;
     const isDeleted = msg.is_deleted_for_everyone === true;
     const canDelete = msg.can_delete !== false;
     const isRead = msg.is_read === true;
     
     const time = formatMessageTime(msg.created_at);
-    const content = isDeleted ? '<em class="text-muted">This message was deleted</em>' : escapeHtml(msg.content || '');
+    const rawContent = msg.content || '';
+    const content = isDeleted ? '<em class="text-muted">This message was deleted</em>' : (rawContent ? escapeHtml(rawContent) : '<em class="text-muted">Empty message</em>');
     const bubbleClass = isDeleted ? 'message-bubble bg-light text-muted' : (isMe ? 'message-bubble bg-primary text-white' : 'message-bubble bg-light');
     const readIcon = isMe && isRead ? ' <i class="fas fa-check-double ms-1" style="color: #0099ff;"></i>' : '';
     

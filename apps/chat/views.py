@@ -125,7 +125,7 @@ class MessageListView(generics.ListAPIView):
         
         return room.messages.exclude(
             id__in=hidden_message_ids
-        ).select_related('sender')
+        ).select_related('sender').order_by('created_at')
 
 
 class SendMessageView(generics.CreateAPIView):
